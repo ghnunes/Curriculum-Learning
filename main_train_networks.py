@@ -17,6 +17,7 @@ import datasets.cifar100
 import models.cifar100_model
 import train_keras_model
 import transfer_learning
+import instance_hardness
 import pickle
 import argparse
 import time
@@ -132,6 +133,7 @@ def load_model():
 
 def load_order(order_name, dataset):
     classic_networks = ["vgg16", "vgg19", "inception", "xception", "resnet"]
+    ih_measures = []
     if order_name in classic_networks:
         network_name = order_name
         if not transfer_learning.svm_scores_exists(dataset,
@@ -145,9 +147,11 @@ def load_order(order_name, dataset):
         else:
             (transfer_values_train, transfer_values_test) = (None, None)
 
+
         train_scores, test_scores = transfer_learning.get_svm_scores(transfer_values_train, dataset.y_train,
                                                                      transfer_values_test, dataset.y_test, dataset,
                                                                      network_name=network_name)
+
         order = transfer_learning.rank_data_according_to_score(train_scores, dataset.y_train)
         
     else:
@@ -213,6 +217,8 @@ def graph_from_history(history, plot_train=False, plot_test=True):
     axs.set_ylabel("accuracy")
     plt.legend()
 #    axs.legend(loc="best")
+    plt.show()
+
 
 def run_expriment(args):
     dataset = load_dataset(args.dataset)
@@ -284,7 +290,7 @@ def run_expriment(args):
     combined_history = combine_histories(histories)
     
     if output_path:
-        with open(output_path + "_history", 'wb') as file_pi:
+        with open(output_path + "{}_{}_history_{}repeats.pkl".format(args.dataset, args.curriculum, args.repeats), 'wb') as file_pi:
             pickle.dump(combined_history, file_pi)
         
     print("training acc:", combined_history['acc'][-1])
