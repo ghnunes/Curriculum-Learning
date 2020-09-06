@@ -131,7 +131,7 @@ def load_model():
     return models.cifar100_model.Cifar100_Model()
 
 
-def load_order(order_name, dataset):
+def load_order(order_name, transfer_net, dataset):
     classic_networks = ["vgg16", "vgg19", "inception", "xception", "resnet"]
     ih_measures = []
     if order_name in classic_networks:
@@ -153,7 +153,27 @@ def load_order(order_name, dataset):
                                                                      network_name=network_name)
 
         order = transfer_learning.rank_data_according_to_score(train_scores, dataset.y_train)
-        
+
+    elif order_name in ih_measures:
+        ih_name = order_name
+
+        if not instance_hardness.ih_exists(dataset, ih_name, transfer_net=transfer_net):
+            if transfer_net == "inception":
+                (transfer_values_train, transfer_values_test) = transfer_learning.get_transfer_values_inception(dataset)
+
+            else:
+                (transfer_values_train, transfer_values_test) = transfer_learning.get_transfer_values_classic_networks(
+                    dataset,
+                    transfer_net)
+        else:
+            (transfer_values_train, transfer_values_test) = (None, None)
+
+        # In development
+        train_scores, test_scores = instance_hardness.get_ih_scores(transfer_values_train, transfer_values_test,
+                                                                    dataset, ih_name, transfer_net=transfer_net)
+        # In development
+        order = transfer_learning.rank_data_according_to_score(train_scores, dataset.y_train)
+
     else:
         print("do not support order: %s" % args.order)
         raise ValueError
@@ -230,7 +250,7 @@ def run_expriment(args):
     lr_scheduler = exponent_decay_lr_generator(args.lr_decay_rate,
                                                args.minimal_lr,
                                                args.lr_batch_size)
-    order = load_order(args.order, dataset)
+    order = load_order(args.order, args.transfer_net, dataset)
 
     order = balance_order(order, dataset)    
     
