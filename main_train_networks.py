@@ -133,7 +133,19 @@ def load_model():
 
 def load_order(order_name, transfer_net, dataset):
     classic_networks = ["vgg16", "vgg19", "inception", "xception", "resnet"]
-    ih_measures = []
+    ih_measures = {'kDN': True,
+                   'MV': True,
+                   'CB': True,
+                   'N2': True,
+                   'F1': True,
+                   'F2': False,
+                   'F3': False,
+                   'F4': False,
+                   'LSC': True,
+                   'LSR': False,
+                   'Harmfulness': True,
+                   'Usefulness': True}
+
     if order_name in classic_networks:
         network_name = order_name
         if not transfer_learning.svm_scores_exists(dataset,
@@ -147,14 +159,13 @@ def load_order(order_name, transfer_net, dataset):
         else:
             (transfer_values_train, transfer_values_test) = (None, None)
 
-
         train_scores, test_scores = transfer_learning.get_svm_scores(transfer_values_train, dataset.y_train,
                                                                      transfer_values_test, dataset.y_test, dataset,
                                                                      network_name=network_name)
 
         order = transfer_learning.rank_data_according_to_score(train_scores, dataset.y_train)
 
-    elif order_name in ih_measures:
+    elif order_name in ih_measures.keys():
         ih_name = order_name
 
         if not instance_hardness.ih_exists(dataset, ih_name, transfer_net=transfer_net):
@@ -163,19 +174,19 @@ def load_order(order_name, transfer_net, dataset):
 
             else:
                 (transfer_values_train, transfer_values_test) = transfer_learning.get_transfer_values_classic_networks(
-                    dataset,
-                    transfer_net)
+                    dataset, transfer_net)
         else:
             (transfer_values_train, transfer_values_test) = (None, None)
 
         # In development
-        train_scores, test_scores = instance_hardness.get_ih_scores(transfer_values_train, transfer_values_test,
+        train_scores, test_scores = instance_hardness.get_ih_scores(transfer_values_train, dataset.y_train,
+                                                                    transfer_values_test, dataset.y_test,
                                                                     dataset, ih_name, transfer_net=transfer_net)
         # In development
-        order = transfer_learning.rank_data_according_to_score(train_scores, dataset.y_train)
+        order = instance_hardness.rank_data_according_to_ih(train_scores,  reverse=ih_measures.get(ih_name))
 
     else:
-        print("do not support order: %s" % args.order)
+        print("do not support order: %s" % order_name)
         raise ValueError
     
     return order
@@ -214,8 +225,11 @@ def graph_from_history(history, plot_train=False, plot_test=True):
     if plot_train:
         x = np.array(history['batch_num'])
         y = history['acc'][x]
-        error = history['std_acc'][x]
-        
+        if history['std_acc'] is not None:
+            error = history['std_acc'][x]
+        else:
+            error = None
+
         if error is not None:
             axs.errorbar(x, y, error, marker='^', label="train")
         else:
@@ -230,14 +244,12 @@ def graph_from_history(history, plot_train=False, plot_test=True):
             axs.errorbar(x, y, error, marker='^', label="test")
         else:
             plt.plot(x, y, label="test")
-        
-        
-    
+
     axs.set_xlabel("batch number")
     axs.set_ylabel("accuracy")
     plt.legend()
 #    axs.legend(loc="best")
-    plt.show()
+#     plt.show()
 
 
 def run_expriment(args):
@@ -316,40 +328,49 @@ def run_expriment(args):
     print("training acc:", combined_history['acc'][-1])
     print("test acc:", combined_history['val_acc'][-1])
     
-    graph_from_history(combined_history, plot_train=False, plot_test=True)
+    # graph_from_history(combined_history, plot_train=False, plot_test=True)
     
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='')
+#     parser = argparse.ArgumentParser(description='')
+#
+#     parser.add_argument("--dataset", default="cifar100_subset_16", help="dataset to use")
+#     parser.add_argument("--output_path", default=r'', help="where to save the model")
+#     parser.add_argument("--verbose", default=True, type=bool, help="print more stuff")
+#
+#     parser.add_argument("--curriculum", "-cl", default="curriculum", help="which test case to use. supports: vanilla, curriculum, anti and random")
+#     parser.add_argument("--batch_size", default=100, type=int, help="determine batch size")
+#     parser.add_argument("--num_epochs", default=140, type=int, help="number of epochs to train on")
+# #    parser.add_argument("--num_epochs", default=10, type=int)
+#
+# #     lr params
+#     parser.add_argument("--learning_rate", "-lr", default=0.035, type=float)
+#     parser.add_argument("--lr_decay_rate", default=1.5, type=float)
+#     parser.add_argument("--minimal_lr", default=1e-4, type=float)
+#     parser.add_argument("--lr_batch_size", default=300, type=int)
+#
+# #    parser.add_argument("--learning_rate", "-lr", default=0.05, type=float, help="initial learning")
+# #    parser.add_argument("--lr_decay_rate", default=1.8, type=float, help="factor by which we drop learning rate exponentially")
+# #    parser.add_argument("--minimal_lr", default=1e-4, type=float, help="min learning rate we allow")
+# #    parser.add_argument("--lr_batch_size", default=500, type=int, help="interval of batches in which we drop the learning rate")
+#
+#     # curriculum params
+#     parser.add_argument("--batch_increase", default=100, type=int, help="interval of batches to increase the amount of data we sample from")
+#     parser.add_argument("--increase_amount", default=1.9, type=float, help="factor by which we increase the amount of data we sample from")
+#     parser.add_argument("--starting_percent", default=100/2500, type=float, help="percent of data to sample from in the inital batch")
+#     parser.add_argument("--order", default="inception", help="determine the order of the examples, supports transfer learning. options: inception, vgg16, vgg19, xception, resnet")
+#
+#     parser.add_argument("--repeats", default=1, type=int, help="number of times to repeat the experiment")
+#
+#     args = parser.parse_args()
+#
+#     run_expriment(args)
 
-    parser.add_argument("--dataset", default="cifar100_subset_16", help="dataset to use")
-    parser.add_argument("--output_path", default=r'', help="where to save the model")
-    parser.add_argument("--verbose", default=True, type=bool, help="print more stuff")
-    
-    parser.add_argument("--curriculum", "-cl", default="curriculum", help="which test case to use. supports: vanilla, curriculum, anti and random")
-    parser.add_argument("--batch_size", default=100, type=int, help="determine batch size")
-    parser.add_argument("--num_epochs", default=140, type=int, help="number of epochs to train on")
-#    parser.add_argument("--num_epochs", default=10, type=int)
+    dataset = load_dataset("cifar100_subset_16")
+    (transfer_values_train, transfer_values_test) = transfer_learning.get_transfer_values_inception(dataset)
 
-#     lr params    
-    parser.add_argument("--learning_rate", "-lr", default=0.035, type=float)
-    parser.add_argument("--lr_decay_rate", default=1.5, type=float)
-    parser.add_argument("--minimal_lr", default=1e-4, type=float)
-    parser.add_argument("--lr_batch_size", default=300, type=int)    
-    
-#    parser.add_argument("--learning_rate", "-lr", default=0.05, type=float, help="initial learning")
-#    parser.add_argument("--lr_decay_rate", default=1.8, type=float, help="factor by which we drop learning rate exponentially")
-#    parser.add_argument("--minimal_lr", default=1e-4, type=float, help="min learning rate we allow")
-#    parser.add_argument("--lr_batch_size", default=500, type=int, help="interval of batches in which we drop the learning rate")    
-    
-    # curriculum params
-    parser.add_argument("--batch_increase", default=100, type=int, help="interval of batches to increase the amount of data we sample from")
-    parser.add_argument("--increase_amount", default=1.9, type=float, help="factor by which we increase the amount of data we sample from")
-    parser.add_argument("--starting_percent", default=100/2500, type=float, help="percent of data to sample from in the inital batch")
-    parser.add_argument("--order", default="inception", help="determine the order of the examples, supports transfer learning. options: inception, vgg16, vgg19, xception, resnet")
-    
-    parser.add_argument("--repeats", default=1, type=int, help="number of times to repeat the experiment")
-    
-    args = parser.parse_args()
-    
-    run_expriment(args)
+    with open("transfer_values_train_inception_cifar100_superclass_16.pkl", 'wb') as file_pi:
+        pickle.dump(transfer_values_train, file_pi)
+
+    with open("transfer_values_test_inception_cifar100_superclass_16.pkl", 'wb') as file_pi:
+        pickle.dump(transfer_values_test, file_pi)

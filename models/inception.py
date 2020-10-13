@@ -55,7 +55,9 @@
 ########################################################################
 
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 import download
 from cache import cache
 import os
@@ -69,6 +71,7 @@ import sys
 data_url = "http://download.tensorflow.org/models/image/imagenet/inception-2015-12-05.tgz"
 
 # Directory to store the downloaded data.
+# data_dir = "inception/"
 data_dir = "inception/"
 
 # File containing the mappings between class-number and uid. (Downloaded)
@@ -273,15 +276,17 @@ class Inception:
 
             # Open the graph-def file for binary reading.
             path = os.path.join(data_dir, path_graph_def)
-            with tf.gfile.FastGFile(path, 'rb') as file:
+            # with tf.io.gfile.GFile(path, 'rb') as file:
+            with tf.gfile.FastGFile(path, 'rb') as file: # deprecated
                 # The graph-def is a saved copy of a TensorFlow graph.
                 # First we need to create an empty graph-def.
                 graph_def = tf.GraphDef()
+                # graph_def = tf.compat.v1.GraphDef()
 
                 # Then we load the proto-buf file into the graph-def.
                 graph_def.ParseFromString(file.read())
 
-                # Finally we import the graph-def to the default TensorFlow graph.
+                # Finally we impfort the graph-def to the default TensorFlow graph.
                 tf.import_graph_def(graph_def, name='')
 
                 # Now self.graph holds the Inception model from the proto-buf file.
@@ -350,7 +355,7 @@ class Inception:
 
         elif image_path is not None:
             # Read the jpeg-image as an array of bytes.
-            image_data = tf.gfile.FastGFile(image_path, 'rb').read()
+            image_data = tf.io.gfile.GFile(image_path, 'rb').read()
 
             # Image is passed in as a jpeg-encoded image.
             feed_dict = {self.tensor_name_input_jpeg: image_data}

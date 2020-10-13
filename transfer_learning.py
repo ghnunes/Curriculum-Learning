@@ -17,6 +17,7 @@ import numpy as np
 import pickle
 import classic_nets_imagenet
 
+
 # download the models / datasets
 def get_transfer_values_inception(dataset):
     data_dir = r'./data/'
@@ -122,6 +123,7 @@ def transfer_values_svm_scores(train_x, train_y, test_x, test_y):
     train_scores = clf.predict_proba(train_x)
     return train_scores, test_scores
 
+
 def svm_scores_exists(dataset, network_name="inception",
                       alternative_data_dir="."):
     if dataset is None:
@@ -133,8 +135,9 @@ def svm_scores_exists(dataset, network_name="inception",
     svm_test_path = os.path.join(data_dir, network_name + 'svm_test_values.pkl')
     return os.path.exists(svm_train_path) and os.path.exists(svm_test_path)
 
-def get_svm_scores(transfer_values_train, y_train, transfer_values_test,
-                   y_test, dataset, network_name="inception",
+
+def get_svm_scores(transfer_values_train, y_train, transfer_values_test, y_test,
+                   dataset, network_name="inception",
                    alternative_data_dir="."):
     
     if dataset is None:
@@ -145,7 +148,8 @@ def get_svm_scores(transfer_values_train, y_train, transfer_values_test,
     svm_train_path = os.path.join(data_dir, network_name + 'svm_train_values.pkl')
     svm_test_path = os.path.join(data_dir, network_name + 'svm_test_values.pkl')
     if not os.path.exists(svm_train_path) or not os.path.exists(svm_test_path):
-        train_scores, test_scores = transfer_values_svm_scores(transfer_values_train, y_train, transfer_values_test, y_test)
+        train_scores, test_scores = transfer_values_svm_scores(transfer_values_train, y_train,
+                                                               transfer_values_test, y_test)
         with open(svm_train_path, 'wb') as file_pi:
             pickle.dump(train_scores, file_pi)
 
@@ -161,6 +165,23 @@ def get_svm_scores(transfer_values_train, y_train, transfer_values_test,
 
 
 def rank_data_according_to_score(train_scores, y_train, reverse=False, random=False):
+    """
+    Ranks the data according to difficulty scores
+    For svm scores, considers highest scores as indication of easier examples
+    Parameters
+    ----------
+    train_scores: class probabilities
+    y_train: labels of the data
+    reverse
+        False: if larger scores indicate easier examples
+        True: if larger scores indicate harder examples
+    random: if to randomize the order of the scores
+
+    Returns
+    -------
+    res: list of index of the data in order of increasing difficulty
+    """
+
     train_size, _ = train_scores.shape
     hardness_score = train_scores[list(range(train_size)), y_train]
     res = np.asarray(sorted(range(len(hardness_score)), key=lambda k: hardness_score[k], reverse=True))
