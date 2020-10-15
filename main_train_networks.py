@@ -253,6 +253,8 @@ def graph_from_history(history, plot_train=False, plot_test=True):
 
 
 def run_expriment(args):
+    ih_measures = ['kDN', 'MV', 'CB', 'N2', 'F1', 'F2', 'F3', 'F4', 'LSC', 'LSR', 'Harmfulness',
+                   'Usefulness']
     dataset = load_dataset(args.dataset)
     model_lib = load_model()
 
@@ -320,10 +322,16 @@ def run_expriment(args):
     
     
     combined_history = combine_histories(histories)
-    
-    if output_path:
-        with open(output_path + "{}_{}_history_{}repeats.pkl".format(args.dataset, args.curriculum, args.repeats), 'wb') as file_pi:
-            pickle.dump(combined_history, file_pi)
+
+    if args.order in ih_measures:
+        if output_path:
+            with open(output_path + "{}_{}_history_{}repeats.pkl".format(args.dataset, args.order, args.repeats),
+                      'wb') as file_pi:
+                pickle.dump(combined_history, file_pi)
+    else:
+        if output_path:
+            with open(output_path + "{}_{}_history_{}repeats.pkl".format(args.dataset, args.curriculum, args.repeats), 'wb') as file_pi:
+                pickle.dump(combined_history, file_pi)
         
     print("training acc:", combined_history['acc'][-1])
     print("test acc:", combined_history['val_acc'][-1])
