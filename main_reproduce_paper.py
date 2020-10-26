@@ -189,6 +189,31 @@ def case_1_CB(repeats, output_path="output/"):
     run_expriment(args)
 
 
+def case_1_N1(repeats, output_path="output/"):
+    args = Namespace(dataset="cifar100_subset_16",
+                     model='stVGG',
+                     output_path=output_path,
+                     verbose=False,
+                     optimizer="sgd",
+                     curriculum="curriculum",
+                     batch_size=100,
+                     num_epochs=140,
+                     learning_rate=0.03,
+                     lr_decay_rate=1.1,
+                     minimal_lr=1e-4,
+                     lr_batch_size=100,
+                     batch_increase=100,
+                     increase_amount=1.9,
+                     starting_percent=0.04,
+                     order="N1",
+                     transfer_net="inception",
+                     test_each=50,
+                     repeats=repeats,
+                     balance=True)
+
+    run_expriment(args)
+
+
 def case_1_N2(repeats, output_path="output/"):
     args = Namespace(dataset="cifar100_subset_16",
                      model='stVGG',
@@ -536,9 +561,10 @@ if __name__ == "__main__":
     # anti_curriculum_small_mammals(num_repeats, output_path=output_path)
     # random_small_mammals(num_repeats, output_path=output_path)
 
-    case_1_kDN(num_repeats, output_path=output_path)
+    # case_1_kDN(num_repeats, output_path=output_path)
     # case_1_MV(num_repeats, output_path=output_path)
     # case_1_CB(num_repeats, output_path=output_path)
+    case_1_N1(num_repeats, output_path=output_path)
     # case_1_N2(num_repeats, output_path=output_path)
     # case_1_F1(num_repeats, output_path=output_path)
     # case_1_F2(num_repeats, output_path=output_path)

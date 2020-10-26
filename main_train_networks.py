@@ -136,6 +136,7 @@ def load_order(order_name, transfer_net, dataset):
     ih_measures = {'kDN': True,
                    'MV': True,
                    'CB': True,
+                   'N1': True,
                    'N2': True,
                    'F1': True,
                    'F2': False,

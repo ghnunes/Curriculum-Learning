@@ -8,6 +8,7 @@ import pyhard_measures
 ih_kwargs = {'kDN': {'k': 5, 'distance': 'minkowski'},
              'MV': {},
              'CB': {},
+             'N1': {},
              'N2': {'distance': 'minkowski'},
              'F1': {},
              'F2': {},
